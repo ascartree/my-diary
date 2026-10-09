@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자기소개</title>
+  <script>
+    // 할 일 앱과 같은 저장 칸(planner-theme)을 써서 두 페이지의 테마가 함께 움직여요
+    try {
+      const t = localStorage.getItem('planner-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <style>
+    :root {
+      --bg: #efede8;
+      --paper: #fffdf9;
+      --text: #2b2b2b;
+      --muted: #8f8b84;
+      --line: #e6e2da;
+      --line-strong: #cfcac0;
+      --hover: #f4f1eb;
+      --ink: #2b2f36;
+      --ink-text: #ffffff;
+      --point: #ef6a55;
+      --c1: #F4A09C;
+      --c2: #F5CF66;
+      --c3: #8FD3B6;
+      --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 28px rgba(60,50,30,.08);
+      --pastel: none;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #16171a;
+        --paper: #1e2023;
+        --text: #dcd9d3;
+        --muted: #8b9097;
+        --line: #2c2f34;
+        --line-strong: #43474e;
+        --hover: #26292d;
+        --ink: #d6d3cc;
+        --ink-text: #1e2023;
+        --point: #e8826f;
+        --shadow: 0 8px 28px rgba(0,0,0,.35);
+        --pastel: brightness(0.82) saturate(0.85);
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #16171a;
+      --paper: #1e2023;
+      --text: #dcd9d3;
+      --muted: #8b9097;
+      --line: #2c2f34;
+      --line-strong: #43474e;
+      --hover: #26292d;
+      --ink: #d6d3cc;
+      --ink-text: #1e2023;
+      --point: #e8826f;
+      --shadow: 0 8px 28px rgba(0,0,0,.35);
+      --pastel: brightness(0.82) saturate(0.85);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      line-height: 1.6;
+      padding: 76px 16px 56px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    a { color: inherit; }
+
+    .page {
+      max-width: 880px;
+      margin: 0 auto;
+      background: var(--paper);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 44px 40px 36px;
+      transition: background 0.25s;
+    }
+
+    .tag {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ---------- 상단 고정 버튼 (좌: 할 일 앱, 우: 테마) ---------- */
+    .float-btn {
+      position: fixed;
+      top: calc(18px + env(safe-area-inset-top, 0px));
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: var(--paper);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: inherit;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, border-color 0.25s;
+    }
+    .float-btn:hover { border-color: var(--ink); }
+    .float-btn:focus-visible { outline: 2px solid var(--point); outline-offset: 3px; }
+    .app-link { left: calc(18px + env(safe-area-inset-left, 0px)); padding: 0 16px 0 14px; }
+
+    .theme-switch {
+      right: calc(18px + env(safe-area-inset-right, 0px));
+      padding: 5px 14px 5px 5px;
+      gap: 10px;
+    }
+    .theme-switch .track {
+      position: relative;
+      width: 56px;
+      height: 28px;
+      border-radius: 999px;
+      background: #ebe5d8;
+      transition: background 0.25s;
+    }
+    .theme-switch .knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #ffffff;
+      color: #e89a2c;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      transition: transform 0.28s cubic-bezier(0.4, 0.2, 0.2, 1.2), background 0.25s, color 0.25s;
+    }
+    .theme-switch svg { width: 14px; height: 14px; }
+    .theme-switch .moon { display: none; }
+    .theme-switch[aria-checked="true"] .track { background: #3a4160; }
+    .theme-switch[aria-checked="true"] .knob { transform: translateX(28px); background: #1e2023; color: #f3d67a; }
+    .theme-switch[aria-checked="true"] .sun  { display: none; }
+    .theme-switch[aria-checked="true"] .moon { display: block; }
+
+    /* ---------- 1. 상단: 이름 소개 ---------- */
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding-bottom: 32px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .avatar {
+      flex-shrink: 0;
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: var(--ink-text);
+      font-size: 2.4rem;
+      font-weight: 800;
+      box-shadow: 0 0 0 6px var(--paper), 0 0 0 7px var(--line-strong);
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 .en {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .hero .intro { margin: 12px 0 18px; font-size: 1.02rem; }
+    .hero .intro mark {
+      background: linear-gradient(transparent 58%, color-mix(in srgb, var(--c2) 70%, transparent) 58%);
+      color: inherit;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: var(--ink-text);
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: transform 0.15s;
+    }
+    .cta:hover { transform: translateY(-1px); }
+    .cta:focus-visible { outline: 2px solid var(--point); outline-offset: 3px; }
+
+    /* ---------- 2. 중간: 관심사 카드 3개 ---------- */
+    .interests { padding: 32px 0; border-bottom: 1px solid var(--line); }
+    .interests h2, .contact h2 {
+      margin: 0 0 18px;
+      font-size: 1.15rem;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .card {
+      position: relative;
+      padding: 22px 20px 20px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper);
+      overflow: hidden;
+      transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 5px;
+      background: var(--c);
+      filter: var(--pastel);
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+    .card .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--c) 30%, transparent);
+      margin-bottom: 14px;
+    }
+    .card .icon svg { width: 22px; height: 22px; }
+    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    .card .num {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--line-strong);
+    }
+
+    /* ---------- 3. 하단: 연락처 ---------- */
+    .contact { padding-top: 32px; }
+    .contact-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 1fr;
+      gap: 12px;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      min-width: 0;
+    }
+    .contact-item svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--muted); }
+    .contact-item .label { display: block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); }
+    .contact-item .value {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      overflow-wrap: break-word;
+    }
+    .contact-item a.value:hover { text-decoration: underline; }
+    .contact-item .body { flex: 1; min-width: 0; }
+    .copy-btn {
+      flex-shrink: 0;
+      padding: 5px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: none;
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: var(--hover); }
+
+    .footnote {
+      margin: 32px 0 0;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 72px 12px 40px; }
+      .page { padding: 28px 20px 24px; border-radius: 14px; }
+      .hero { flex-direction: column; text-align: center; gap: 18px; }
+      .hero h1 { font-size: 1.8rem; }
+      .cards, .contact-list { grid-template-columns: 1fr; }
+      .theme-switch .state-label { display: none; }
+      .theme-switch { padding: 5px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="float-btn app-link" href="index.html">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
+    할 일 앱
+  </a>
+
+  <button id="theme-toggle" class="float-btn theme-switch" type="button" role="switch" aria-checked="false" aria-label="다크 모드">
+    <span class="track" aria-hidden="true">
+      <span class="knob">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4.5" fill="currentColor" stroke="none"/>
+          <path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/>
+        </svg>
+      </span>
+    </span>
+    <span class="state-label"></span>
+  </button>
+
+  <main class="page">
+
+    <!-- ========== 1. 상단: 이름 소개 ========== -->
+    <header class="hero">
+      <!-- ✏️ 이름 첫 글자 -->
+      <div class="avatar" aria-hidden="true">홍</div>
+      <div>
+        <span class="tag">ABOUT ME</span>
+        <!-- ✏️ 이름 / 영문 이름 -->
+        <h1>안녕하세요, 홍길동입니다<span class="en">HONG GILDONG</span></h1>
+        <!-- ✏️ 한 줄 소개 -->
+        <p class="intro">
+          매일 조금씩 만들며 배우는 <mark>웹 개발 입문자</mark>예요.
+          하루를 한 칸씩 채워가는 플래너처럼, 작은 프로젝트를 꾸준히 쌓아가고 있어요.
+        </p>
+        <a class="cta" href="index.html">
+          1주차 프로젝트: 하루 플래너 보기
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- ========== 2. 중간: 관심사 카드 3개 ========== -->
+    <section class="interests" aria-labelledby="interests-title">
+      <span class="tag">INTERESTS</span>
+      <h2 id="interests-title">요즘 관심 있는 것</h2>
+      <ul class="cards">
+        <!-- ✏️ 관심사 1 -->
+        <li class="card" style="--c: var(--c1)">
+          <span class="num">01</span>
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg>
+          </div>
+          <h3>웹 개발</h3>
+          <p>HTML, CSS, JavaScript만으로 브라우저에서 바로 돌아가는 작은 도구를 만들어요.</p>
+        </li>
+        <!-- ✏️ 관심사 2 -->
+        <li class="card" style="--c: var(--c2)">
+          <span class="num">02</span>
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7.5 14l2 2 4-4"/></svg>
+          </div>
+          <h3>기록과 계획</h3>
+          <p>플래너, 타임테이블, 습관 기록처럼 하루를 정리하는 방법에 관심이 많아요.</p>
+        </li>
+        <!-- ✏️ 관심사 3 -->
+        <li class="card" style="--c: var(--c3)">
+          <span class="num">03</span>
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.4 0 2-1 2-2 0-.6-.3-1-.6-1.4-.3-.4-.6-.8-.6-1.4 0-1.1.9-2 2-2h2.4A4.8 4.8 0 0 0 22 10.4C22 5.8 17.5 2 12 2Z"/></svg>
+          </div>
+          <h3>사용하기 편한 디자인</h3>
+          <p>눈이 편한 색, 헷갈리지 않는 버튼처럼 쓰는 사람을 배려하는 화면을 좋아해요.</p>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ========== 3. 하단: 연락처 ========== -->
+    <footer class="contact" aria-labelledby="contact-title">
+      <span class="tag">CONTACT</span>
+      <h2 id="contact-title">연락처</h2>
+      <ul class="contact-list">
+        <!-- ✏️ 이메일 -->
+        <li class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3 6 9 7 9-7"/></svg>
+          <div class="body">
+            <span class="label">EMAIL</span>
+            <a class="value" id="email" href="mailto:hello@example.com">hello@example.com</a>
+          </div>
+          <button class="copy-btn" type="button" data-copy="hello@example.com" aria-label="이메일 주소 복사">복사</button>
+        </li>
+        <!-- ✏️ GitHub -->
+        <li class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+          <div class="body">
+            <span class="label">GITHUB</span>
+            <a class="value" href="https://github.com/your-id" target="_blank" rel="noopener">github.com/your-id</a>
+          </div>
+        </li>
+        <!-- ✏️ 블로그 / SNS -->
+        <li class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <div class="body">
+            <span class="label">BLOG</span>
+            <a class="value" href="https://example.com" target="_blank" rel="noopener">example.com</a>
+          </div>
+        </li>
+      </ul>
+
+      <p class="footnote">
+        © 2026 홍길동 · <a href="index.html">하루 플래너 (1주차 프로젝트)</a>
+      </p>
+    </footer>
+  </main>
+
+  <script>
+    // ---------- 다크 모드 스위치 (할 일 앱과 같은 방식, 같은 저장 칸) ----------
+    const themeToggle = document.getElementById('theme-toggle');
+    const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const isDark = () => {
+      const t = document.documentElement.dataset.theme;
+      return t ? t === 'dark' : darkQuery.matches;
+    };
+    function renderThemeToggle() {
+      const dark = isDark();
+      themeToggle.setAttribute('aria-checked', dark);
+      themeToggle.querySelector('.state-label').textContent = dark ? '다크 모드' : '라이트 모드';
+      themeToggle.title = dark ? '라이트 모드로 바꾸기' : '다크 모드로 바꾸기';
+    }
+    themeToggle.addEventListener('click', () => {
+      const next = isDark() ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('planner-theme', next); } catch {}
+      renderThemeToggle();
+    });
+    darkQuery.addEventListener('change', renderThemeToggle);
+    renderThemeToggle();
+
+    // ---------- 이메일 복사 ----------
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const text = btn.dataset.copy;
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        } catch {
+          // 클립보드 권한이 없으면 주소를 선택해 두어 Ctrl+C로 복사할 수 있게 해요
+          const range = document.createRange();
+          range.selectNodeContents(document.getElementById('email'));
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        btn.textContent = ok ? '복사됨 ✓' : 'Ctrl+C';
+        setTimeout(() => { btn.textContent = '복사'; }, 1600);
+      });
+    });
+  </script>
+</body>
+</html>
